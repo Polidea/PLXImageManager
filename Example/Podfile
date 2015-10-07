@@ -1,0 +1,12 @@
+source 'https://github.com/CocoaPods/Specs.git'
+
+target 'PLXImageManager_Example', :exclusive => true do
+  pod "PLXImageManager", :path => "../"
+end
+
+target 'PLXImageManager_Tests', :exclusive => true do
+  pod "Specta", '~> 1.0'
+  pod "Expecta", '~> 1.0'
+  pod "OCMockito", "~> 1.0"
+  pod "OCHamcrest", "~> 4.0"
+end
