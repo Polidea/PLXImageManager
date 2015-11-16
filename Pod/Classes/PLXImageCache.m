@@ -49,6 +49,7 @@
 - (id)init {
     NSCache * cache = [[NSCache alloc] init];
     cache.name = @"PLXImageCache";
+    cache.countLimit = 25;
     return [self initWithCache:cache fileManager:[NSFileManager defaultManager]];
 }
 
@@ -104,6 +105,15 @@
     [fileManager removeItemAtPath:[[self imageCacheDirectory] path] error:nil];
 }
 
+-(NSInteger)memoryCacheSizeLimit {
+    return memoryCache.countLimit;
+}
+
+-(void)setMemoryCacheSizeLimit:(NSInteger)memoryCacheSizeLimit {
+    memoryCache.countLimit = memoryCacheSizeLimit;
+}
+
+#pragma mark internal helpers
 
 -(NSString *)filePathForKey:(NSString *)key{
     return [[[self imageCacheDirectory] URLByAppendingPathComponent:[self _sha1HashOfString:key]] path];

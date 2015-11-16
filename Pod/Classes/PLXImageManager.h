@@ -80,7 +80,7 @@ Depending on the availability of the image the placeholder will be called:
 - (PLXImageManagerRequestToken *)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback;
 
 /**
-Remove a image represented by identifier from the cache.
+Remove a image represented by identifier from the cache. Note: this performs a IO operation, and therefor should not be called from the main thread.
 
 @param identifier a identifier that uniquely represents the image
 
@@ -89,15 +89,30 @@ Remove a image represented by identifier from the cache.
 - (void)clearCachedImageForIdentifier:(id <NSObject>)identifier;
 
 /**
-Removes all cached images.
+Removes all cached images. Note: this performs a IO operation, and therefor should not be called from the main thread.
 */
-- (void)clearCache;
+- (void)clearCache DEPRECATED_ATTRIBUTE;
+
+/**
+ Clears the contents of the in-memory cache. This method can be run from the main-thread.
+ */
+-(void) clearMemoryCache;
+
+/**
+ Clears the contents of the file cache. Note: this performs a IO operation, and therefor should not be called from the main thread.
+ */
+-(void) clearFileCache;
 
 /**
 Calling this method will lower the priority of all previously scheduled requests. As a result new requests
 (and subsequent calls to already scheduled ones) will be handled first.
 */
 - (void)deferCurrentDownloads;
+
+/**
+Limits the amount of items that will be stored in the in-memory cache. A value of 0 means ther is not limit. Defaults to 25.
+*/
+@property (nonatomic, assign, readwrite) NSInteger memoryCacheSizeLimit;
 
 @end
 

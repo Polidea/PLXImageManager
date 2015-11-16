@@ -40,6 +40,42 @@ describe(@"PLXImageManager", ^{
         });
     });
     
+    describe(@"memory cache limit property", ^{
+        __block Class identifierClass;
+        __block PLXImageManager * imageManager;
+        __block id<PLXImageManagerProvider> providerMock;
+        __block PLXImageCache * cacheMock;
+        
+        beforeAll(^{
+            identifierClass = [NSString class];
+        });
+        
+        beforeEach(^{
+            providerMock = MKTMockProtocol(@protocol(PLXImageManagerProvider));
+            cacheMock = MKTMock([PLXImageCache class]);
+            
+            [MKTGiven([providerMock identifierClass]) willReturn:identifierClass];
+            [MKTGiven([providerMock keyForIdentifier:anything()]) willDo:^id(NSInvocation * invocation) {
+                NSArray * args = [invocation mkt_arguments];
+                return args[0];
+            }];
+            
+            imageManager = [[PLXImageManager alloc] initWithProvider:providerMock cache:cacheMock ioOpRunner:NULL downloadOpRunner:NULL sentinelOpRunner:NULL];
+        });
+        
+        it(@"reads should proxy to image cache", ^{
+            __unused NSInteger sizeLimit = imageManager.memoryCacheSizeLimit;
+            
+            [MKTVerify(cacheMock) memoryCacheSizeLimit];
+        });
+    
+        it(@"writes should proxy to image cache", ^{
+            imageManager.memoryCacheSizeLimit = 5;
+            
+            [MKTVerify(cacheMock) setMemoryCacheSizeLimit:5];
+        });
+    });
+    
     describe(@"clearing", ^{
         __block Class identifierClass;
         __block PLXImageManager * imageManager;
@@ -71,10 +107,25 @@ describe(@"PLXImageManager", ^{
             [MKTVerify(cacheMock) removeImageWithKey:identifier];
         });
         
-        it(@"all images it should call the proper image cache methods", ^{
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        it(@"all images should call the proper image cache methods", ^{
             [imageManager clearCache];
             
             [MKTVerify(cacheMock) clearMemoryCache];
+            [MKTVerify(cacheMock) clearFileCache];
+        });
+        #pragma GCC diagnostic pop
+        
+        it(@"images in memory should call the proper image cache methods", ^{
+            [imageManager clearMemoryCache];
+            
+            [MKTVerify(cacheMock) clearMemoryCache];
+        });
+        
+        it(@"images in file storage should call the proper image cache methods", ^{
+            [imageManager clearFileCache];
+            
             [MKTVerify(cacheMock) clearFileCache];
         });
     });

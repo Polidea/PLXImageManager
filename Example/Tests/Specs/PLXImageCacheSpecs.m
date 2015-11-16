@@ -121,6 +121,32 @@ describe(@"PLXImageCache", ^{
             [MKTVerify(memoryCacheStub) removeAllObjects];
         });
     });
+    
+    describe(@"memory cache limit property", ^{
+        __block PLXImageCache * imageCache;
+        __block NSFileManager * fileManagerStub;
+        __block NSCache * memoryCacheStub;
+        
+        
+        beforeEach(^{
+            fileManagerStub = MKTMock([NSFileManager class]);
+            memoryCacheStub = MKTMock([NSCache class]);
+            imageCache = [[PLXImageCache alloc] initWithCache:memoryCacheStub
+                                                  fileManager:fileManagerStub];
+        });
+        
+        it(@"read should proxy to the buildin cache", ^{
+            __unused NSInteger sizeLimit = imageCache.memoryCacheSizeLimit;
+            
+            [MKTVerify(memoryCacheStub) countLimit];
+        });
+        
+        it(@"write should proxy to the buildin cache", ^{
+            imageCache.memoryCacheSizeLimit = 10;
+            
+            [MKTVerify(memoryCacheStub) setCountLimit:10];
+        });
+    });
 });
 
 SpecEnd

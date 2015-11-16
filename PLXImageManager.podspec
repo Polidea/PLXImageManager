@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "PLXImageManager"
-  s.version          = "3.0.0"
+  s.version          = "3.0.1"
   s.summary          = "Image manager/downloader for iOS"
   s.homepage         = "https://github.com/Polidea/PLXImageManager"
   s.license          = 'BSD'

@@ -245,6 +245,14 @@
     [imageCache clearFileCache];
 }
 
+- (void)clearMemoryCache {
+    [imageCache clearMemoryCache];
+}
+
+- (void)clearFileCache {
+    [imageCache clearFileCache];
+}
+
 - (void)deferCurrentDownloads {
     @synchronized (sentinelDict) {
         for (PLXImageManagerLoadOperation *op in [sentinelDict allValues]) {
@@ -253,6 +261,14 @@
             }
         }
     }
+}
+
+-(NSInteger)memoryCacheSizeLimit {
+    return imageCache.memoryCacheSizeLimit;
+}
+
+-(void)setMemoryCacheSizeLimit:(NSInteger)memoryCacheSizeLimit {
+    imageCache.memoryCacheSizeLimit = memoryCacheSizeLimit;
 }
 
 @end
