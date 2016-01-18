@@ -34,68 +34,69 @@
 
 @interface PLXImageManager ()
 
-- (id)initWithProvider:(id <PLXImageManagerProvider>)aProvider cache:(PLXImageCache *)aCache ioOpRunner:(PLXImageManagerOpRunner *)ioOpRunner downloadOpRunner:(PLXImageManagerOpRunner *)downloadOpRunner sentinelOpRunner:(PLXImageManagerOpRunner *)sentinelOpRunner;
+- (id)initWithProvider:(id <PLXImageManagerProvider>)provider cache:(PLXImageCache *)cache ioOpRunner:(PLXImageManagerOpRunner *)ioOpRunner downloadOpRunner:(PLXImageManagerOpRunner *)downloadOpRunner sentinelOpRunner:(PLXImageManagerOpRunner *)sentinelOpRunner;
 
 @end
 
 @interface PLXImageManagerRequestToken ()
 
-- (id)initWithKey:(NSString *)aKey;
+- (id)initWithKey:(NSString *)key;
+
 - (void)markReady;
 
-@property (nonatomic, copy, readwrite) void (^onCancelBlock)();
+@property(nonatomic, copy, readwrite) void (^onCancelBlock)();
 
 @end
 
 @implementation PLXImageManager {
-    PLXImageManagerOpRunner *ioQueue;
-    PLXImageManagerOpRunner *downloadQueue;
-    PLXImageManagerOpRunner *sentinelQueue;
+    PLXImageManagerOpRunner *_ioQueue;
+    PLXImageManagerOpRunner *_downloadQueue;
+    PLXImageManagerOpRunner *_sentinelQueue;
 
-    PLXImageCache *imageCache;
-    id <PLXImageManagerProvider> provider;
-    NSMutableDictionary *sentinelDict;
+    PLXImageCache *_imageCache;
+    id <PLXImageManagerProvider> _provider;
+    NSMutableDictionary *_sentinelDict;
 }
 
-- (id)initWithProvider:(id <PLXImageManagerProvider>)aProvider {
-    return [self initWithProvider:aProvider cache:[PLXImageCache new] ioOpRunner:[PLXImageManagerOpRunner new] downloadOpRunner:[PLXImageManagerOpRunner new] sentinelOpRunner:[PLXImageManagerOpRunner new]];
+- (id)initWithProvider:(id <PLXImageManagerProvider>)provider {
+    return [self initWithProvider:provider cache:[PLXImageCache new] ioOpRunner:[PLXImageManagerOpRunner new] downloadOpRunner:[PLXImageManagerOpRunner new] sentinelOpRunner:[PLXImageManagerOpRunner new]];
 }
 
 //Note: this constructor is used by tests
-- (id)initWithProvider:(id <PLXImageManagerProvider>)aProvider cache:(PLXImageCache *)aCache ioOpRunner:(PLXImageManagerOpRunner *)aIoOpRunner downloadOpRunner:(PLXImageManagerOpRunner *)aDownloadOpRunner sentinelOpRunner:(PLXImageManagerOpRunner *)aSentinelOpRunner {
+- (id)initWithProvider:(id <PLXImageManagerProvider>)provider cache:(PLXImageCache *)cache ioOpRunner:(PLXImageManagerOpRunner *)ioOpRunner downloadOpRunner:(PLXImageManagerOpRunner *)downloadOpRunner sentinelOpRunner:(PLXImageManagerOpRunner *)sentinelOpRunner {
     self = [super init];
     if (self) {
-        if (aProvider == nil) {
+        if (provider == nil) {
             @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:@"A valid provider is missing" userInfo:nil];
         }
 
-        provider = aProvider;
+        _provider = provider;
 
-        ioQueue = aIoOpRunner;
-        ioQueue.name = @"plximagemanager.io";
-        ioQueue.maxConcurrentOperationsCount = 1;
-        downloadQueue = aDownloadOpRunner;
-        downloadQueue.name = @"plximagemanager.download";
-        downloadQueue.maxConcurrentOperationsCount = [provider maxConcurrentDownloadsCount];
-        sentinelQueue = aSentinelOpRunner;
-        sentinelQueue.name = @"plximagemanager.sentinel";
-        sentinelQueue.maxConcurrentOperationsCount = downloadQueue.maxConcurrentOperationsCount;
+        _ioQueue = ioOpRunner;
+        _ioQueue.name = @"plximagemanager.io";
+        _ioQueue.maxConcurrentOperationsCount = 1;
+        _downloadQueue = downloadOpRunner;
+        _downloadQueue.name = @"plximagemanager.download";
+        _downloadQueue.maxConcurrentOperationsCount = [_provider maxConcurrentDownloadsCount];
+        _sentinelQueue = sentinelOpRunner;
+        _sentinelQueue.name = @"plximagemanager.sentinel";
+        _sentinelQueue.maxConcurrentOperationsCount = _downloadQueue.maxConcurrentOperationsCount;
 
-        sentinelDict = [NSMutableDictionary new];
+        _sentinelDict = [NSMutableDictionary new];
 
-        imageCache = aCache;
+        _imageCache = cache;
     }
 
     return self;
 }
 
 - (PLXImageManagerRequestToken *)imageForIdentifier:(id <NSObject>)identifier placeholder:(UIImage *)placeholder callback:(void (^)(UIImage *image, BOOL isPlaceholder))callback {
-    Class identifierClass = [provider identifierClass];
+    Class identifierClass = [_provider identifierClass];
     if (![identifier isKindOfClass:identifierClass]) {
         @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
     }
 
-    NSString *const opKey = [provider keyForIdentifier:identifier];
+    NSString *const opKey = [_provider keyForIdentifier:identifier];
 
     PLXImageManagerRequestToken *token = [[PLXImageManagerRequestToken alloc] initWithKey:opKey];
 
@@ -114,7 +115,7 @@
     };
 
     //first: fast memory only cache path
-    UIImage *memoryCachedImage = [imageCache getWithKey:opKey onlyMemoryCache:YES];
+    UIImage *memoryCachedImage = [_imageCache getWithKey:opKey onlyMemoryCache:YES];
     if (memoryCachedImage != nil) {
         [token markReady];
         notifyBlock(memoryCachedImage, NO);
@@ -126,13 +127,13 @@
         //second: slow paths
         PLXImageManagerLoadOperation *sentinelOp = nil;
         __weak __block PLXImageManagerLoadOperation *weakSentinelOp;
-        @synchronized (sentinelDict) {
-            sentinelOp = [sentinelDict objectForKey:opKey];
+        @synchronized (_sentinelDict) {
+            sentinelOp = _sentinelDict[opKey];
             if (sentinelOp == nil) {
-                __weak typeof(provider)weakProvider = provider;
-                __weak typeof(imageCache)weakImageCache = imageCache;
-                __weak typeof(ioQueue)weakIOQueue = ioQueue;
-                __weak typeof(sentinelDict)weakSentinelDict = sentinelDict;
+                __weak typeof(_provider) weakProvider = _provider;
+                __weak typeof(_imageCache) weakImageCache = _imageCache;
+                __weak typeof(_ioQueue) weakIOQueue = _ioQueue;
+                __weak typeof(_sentinelDict) weakSentinelDict = _sentinelDict;
 
                 __weak __block PLXImageManagerLoadOperation *weakDownloadOperation;
                 __weak __block PLXImageManagerLoadOperation *weakFileReadOperation;
@@ -201,10 +202,10 @@
                 [sentinelOp addDependency:fileReadOperation];
                 [sentinelOp addDependency:downloadOperation];
 
-                [downloadQueue addOperation:downloadOperation];
-                [ioQueue addOperation:fileReadOperation];
-                [sentinelQueue addOperation:sentinelOp];
-                [sentinelDict setObject:sentinelOp forKey:opKey];
+                [_downloadQueue addOperation:downloadOperation];
+                [_ioQueue addOperation:fileReadOperation];
+                [_sentinelQueue addOperation:sentinelOp];
+                _sentinelDict[opKey] = sentinelOp;
             } else {
                 [sentinelOp incrementUsage];
             }
@@ -224,38 +225,38 @@
         }];
         [notifyOperation addDependency:sentinelOp];
         notifyOperation.queuePriority = NSOperationQueuePriorityVeryHigh;
-        [sentinelQueue addOperation:notifyOperation];
+        [_sentinelQueue addOperation:notifyOperation];
     }
 
     return token;
 }
 
-- (void)clearCachedImageForIdentifier:(id <NSObject>)identifier{
-    Class identifierClass = [provider identifierClass];
+- (void)clearCachedImageForIdentifier:(id <NSObject>)identifier {
+    Class identifierClass = [_provider identifierClass];
     if (![identifier isKindOfClass:identifierClass]) {
         @throw [NSException exceptionWithName:@"InvalidArgumentException" reason:[NSString stringWithFormat:@"The provided identifier \"%@\" is of a wrong type", identifier] userInfo:nil];
     }
 
-    NSString *const opKey = [provider keyForIdentifier:identifier];
-    [imageCache removeImageWithKey:opKey];
+    NSString *const opKey = [_provider keyForIdentifier:identifier];
+    [_imageCache removeImageWithKey:opKey];
 }
 
 - (void)clearCache {
-    [imageCache clearMemoryCache];
-    [imageCache clearFileCache];
+    [_imageCache clearMemoryCache];
+    [_imageCache clearFileCache];
 }
 
 - (void)clearMemoryCache {
-    [imageCache clearMemoryCache];
+    [_imageCache clearMemoryCache];
 }
 
 - (void)clearFileCache {
-    [imageCache clearFileCache];
+    [_imageCache clearFileCache];
 }
 
 - (void)deferCurrentDownloads {
-    @synchronized (sentinelDict) {
-        for (PLXImageManagerLoadOperation *op in [sentinelDict allValues]) {
+    @synchronized (_sentinelDict) {
+        for (PLXImageManagerLoadOperation *op in [_sentinelDict allValues]) {
             for (PLXImageManagerLoadOperation *dependentOp in op.dependencies) {
                 dependentOp.queuePriority = NSOperationQueuePriorityLow;
             }
@@ -263,12 +264,12 @@
     }
 }
 
--(NSInteger)memoryCacheSizeLimit {
-    return imageCache.memoryCacheSizeLimit;
+- (NSUInteger)memoryCacheSizeLimit {
+    return _imageCache.memoryCacheSizeLimit;
 }
 
--(void)setMemoryCacheSizeLimit:(NSInteger)memoryCacheSizeLimit {
-    imageCache.memoryCacheSizeLimit = memoryCacheSizeLimit;
+-(void)setMemoryCacheSizeLimit:(NSUInteger)memoryCacheSizeLimit {
+    _imageCache.memoryCacheSizeLimit = memoryCacheSizeLimit;
 }
 
 @end
@@ -277,39 +278,30 @@
 
 }
 
-@synthesize key = key;
-@synthesize isCanceled = isCanceled;
-@synthesize isReady = isReady;
-@synthesize onCancelBlock = onCancelBlock;
-
-- (id)initWithKey:(NSString *)aKey {
+- (id)initWithKey:(NSString *)key {
     self = [super init];
     if (self) {
-        key = aKey;
-        isCanceled = NO;
-        isReady = NO;
+        _key = key;
+        _isCanceled = NO;
+        _isReady = NO;
     }
     return self;
 }
 
 - (void)markReady {
-    if (isCanceled){
+    if (_isCanceled) {
         return;
     }
-    isReady = YES;
-}
-
-- (BOOL)isReady {
-    return isReady;
+    _isReady = YES;
 }
 
 - (void)cancel {
-    if (isCanceled || isReady) {
+    if (_isCanceled || _isReady) {
         return;
     }
-    isCanceled = YES;
-    if (onCancelBlock){
-        onCancelBlock();
+    _isCanceled = YES;
+    if (_onCancelBlock) {
+        _onCancelBlock();
     }
 }
 

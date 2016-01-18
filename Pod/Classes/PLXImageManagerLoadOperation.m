@@ -31,26 +31,17 @@
 
 @implementation PLXImageManagerLoadOperation {
 @private
-    UIImage * (^loadBlock)();
-    NSString *key;
-    UIImage *image;
-    void (^readyBlock)(UIImage *);
-    NSUInteger usageCount;
+    UIImage * (^_loadBlock)();
+    NSUInteger _usageCount;
 }
-
-@synthesize key = key;
-@synthesize image = image;
-@synthesize readyBlock = readyBlock;
-@synthesize opId = opId;
-@synthesize onCancelBlock = onCancelBlock;
 
 
 - (id)initWithKey:(NSString *)aKey loadBlock:(UIImage * (^)())aLoadBlock {
     self = [super init];
     if (self) {
-        key = aKey;
-        loadBlock = aLoadBlock;
-        usageCount = 1;
+        _key = aKey;
+        _loadBlock = aLoadBlock;
+        _usageCount = 1;
     }
 
     return self;
@@ -60,34 +51,34 @@
     if (self.isCancelled){
         return;
     }
-    if (loadBlock) {
-        image = loadBlock();
+    if (_loadBlock) {
+        _image = _loadBlock();
     } else {
         NSLog(@"no work block was set");
     }
-    if (readyBlock != nil){
-        readyBlock(image);
+    if (_readyBlock != nil){
+        _readyBlock(_image);
     }
 }
 
 - (void)cancel {
     [super cancel];
-    if (onCancelBlock != nil){
-        onCancelBlock();
+    if (_onCancelBlock != nil){
+        _onCancelBlock();
     }
 }
 
 - (void)incrementUsage {
-    usageCount++;
+    _usageCount++;
 }
 
 - (void)decrementUsageAndCancelOnZero {
-    if (usageCount <= 0){
+    if (_usageCount <= 0){
         return;
     }
 
-    --usageCount;
-    if (usageCount == 0){
+    --_usageCount;
+    if (_usageCount == 0){
         for (NSOperation * op in self.dependencies){
             [op cancel];
         }

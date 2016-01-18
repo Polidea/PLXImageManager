@@ -34,36 +34,36 @@ NSUInteger const PLXImageManagerOpRunnerUnlimited = NSOperationQueueDefaultMaxCo
 
 @implementation PLXImageManagerOpRunner {
 @private
-    NSOperationQueue *queue;
+    NSOperationQueue *_queue;
 }
 
 - (id)init {
     self = [super init];
     if (self) {
-        queue = [NSOperationQueue new];
+        _queue = [NSOperationQueue new];
     }
 
     return self;
 }
 
 - (void)addOperation:(NSOperation *)operation {
-    [queue addOperation:operation];
+    [_queue addOperation:operation];
 }
 
 - (void)setMaxConcurrentOperationsCount:(NSUInteger)maxConcurrentOperationsCount {
-    queue.maxConcurrentOperationCount = maxConcurrentOperationsCount;
+    _queue.maxConcurrentOperationCount = maxConcurrentOperationsCount;
 }
 
 - (void)setName:(NSString *)name {
-    queue.name = name;
+    _queue.name = name;
 }
 
 - (NSUInteger)maxConcurrentOperationsCount {
-    return queue.maxConcurrentOperationCount;
+    return (NSUInteger) _queue.maxConcurrentOperationCount;
 }
 
 - (NSString *)name {
-    return queue.name;
+    return _queue.name;
 }
 
 @end

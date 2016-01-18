@@ -42,12 +42,12 @@
 
 @implementation PLXImageCache {
 @private
-    NSCache *memoryCache;
-    NSFileManager * fileManager;
+    NSCache *_memoryCache;
+    NSFileManager *_fileManager;
 }
 
 - (id)init {
-    NSCache * cache = [[NSCache alloc] init];
+    NSCache *cache = [[NSCache alloc] init];
     cache.name = @"PLXImageCache";
     cache.countLimit = 25;
     return [self initWithCache:cache fileManager:[NSFileManager defaultManager]];
@@ -56,8 +56,8 @@
 - (id)initWithCache:(NSCache *)cache fileManager:(NSFileManager *)manager {
     self = [super init];
     if (self) {
-        fileManager = manager;
-        memoryCache = cache;
+        _fileManager = manager;
+        _memoryCache = cache;
     }
 
     return self;
@@ -66,13 +66,13 @@
 - (UIImage *)getWithKey:(NSString *)key onlyMemoryCache:(BOOL)onlyMemory {
     [self validateKey:key];
 
-    NSString * filePath = [self filePathForKey:key];
+    NSString *filePath = [self filePathForKey:key];
 
-    UIImage * image = [memoryCache objectForKey:key];
-    if (image == nil && !onlyMemory){
+    UIImage *image = [_memoryCache objectForKey:key];
+    if (image == nil && !onlyMemory) {
         image = [UIImage imageWithContentsOfFile:filePath];
         if (image != nil) {
-            [memoryCache setObject:image forKey:key];
+            [_memoryCache setObject:image forKey:key];
         }
     }
 
@@ -82,14 +82,17 @@
 - (void)set:(UIImage *)image forKey:(NSString *)key {
     [self validateKey:key];
 
-    NSString * filePath = [self filePathForKey:key];
+    NSString *filePath = [self filePathForKey:key];
 
     if (image == nil) {
-        [memoryCache removeObjectForKey:key];
-        [fileManager removeItemAtPath:filePath error:NULL];
+        [_memoryCache removeObjectForKey:key];
+        if ([_fileManager fileExistsAtPath:filePath]) {
+            [_fileManager removeItemAtPath:filePath error:NULL];
+        }
+
     } else {
-        [memoryCache setObject:image forKey:key];
-        [fileManager createFileAtPath:filePath contents:UIImagePNGRepresentation(image) attributes:nil];
+        [_memoryCache setObject:image forKey:key];
+        [_fileManager createFileAtPath:filePath contents:UIImagePNGRepresentation(image) attributes:nil];
     }
 }
 
@@ -98,24 +101,24 @@
 }
 
 - (void)clearMemoryCache {
-    [memoryCache removeAllObjects];
+    [_memoryCache removeAllObjects];
 }
 
 - (void)clearFileCache {
-    [fileManager removeItemAtPath:[[self imageCacheDirectory] path] error:nil];
+    [_fileManager removeItemAtPath:[[self imageCacheDirectory] path] error:nil];
 }
 
--(NSInteger)memoryCacheSizeLimit {
-    return memoryCache.countLimit;
+-(NSUInteger)memoryCacheSizeLimit {
+    return _memoryCache.countLimit;
 }
 
--(void)setMemoryCacheSizeLimit:(NSInteger)memoryCacheSizeLimit {
-    memoryCache.countLimit = memoryCacheSizeLimit;
+-(void)setMemoryCacheSizeLimit:(NSUInteger)memoryCacheSizeLimit {
+    _memoryCache.countLimit = memoryCacheSizeLimit;
 }
 
 #pragma mark internal helpers
 
--(NSString *)filePathForKey:(NSString *)key{
+- (NSString *)filePathForKey:(NSString *)key {
     return [[[self imageCacheDirectory] URLByAppendingPathComponent:[self _sha1HashOfString:key]] path];
 }
 
@@ -128,25 +131,25 @@
 - (NSURL *)imageCacheDirectory {
     static NSURL *cacheDirectory;
     if (cacheDirectory == nil) {
-        NSArray *urls = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+        NSArray *urls = [_fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
         NSURL *libraryUrl = [urls count] > 0 ? urls[0] : nil;
 
         if (libraryUrl != nil) {
             cacheDirectory = [[libraryUrl URLByAppendingPathComponent:@"Caches"] URLByAppendingPathComponent:@"PLXImageCache"];
-            [fileManager createDirectoryAtPath:[cacheDirectory path] withIntermediateDirectories:YES attributes:nil error:NULL];
+            [_fileManager createDirectoryAtPath:[cacheDirectory path] withIntermediateDirectories:YES attributes:nil error:NULL];
         }
     }
     return cacheDirectory;
 }
 
-- (NSString *)_sha1HashOfString:(NSString*)string {
-    const char* str = [string UTF8String];
+- (NSString *)_sha1HashOfString:(NSString *)string {
+    const char *str = [string UTF8String];
     unsigned char result[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(str, (uint32_t)strlen(str), result);
+    CC_SHA1(str, (uint32_t) strlen(str), result);
 
-    NSMutableString *ret = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH*2];
-    for(int i = 0; i<CC_SHA1_DIGEST_LENGTH; i++) {
-        [ret appendFormat:@"%02x",result[i]];
+    NSMutableString *ret = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
+    for (int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
+        [ret appendFormat:@"%02x", result[i]];
     }
     return ret;
 }

@@ -32,15 +32,15 @@
 
 @interface PLXImageManagerLoadOperation : NSOperation
 
-@property (nonatomic, retain, readonly) NSString * key;
-@property (nonatomic, retain, readonly) UIImage * image;
-@property (nonatomic, retain, readwrite) NSString * opId;
-@property (nonatomic, copy, readwrite) void (^readyBlock)(UIImage *);
-@property (nonatomic, copy, readwrite) void (^onCancelBlock)();
+@property(nonatomic, retain, readonly) NSString *key;
+@property(nonatomic, retain, readonly) UIImage *image;
+@property(nonatomic, retain, readwrite) NSString *opId;
+@property(nonatomic, copy, readwrite) void (^readyBlock)(UIImage *);
+@property(nonatomic, copy, readwrite) void (^onCancelBlock)();
 
--(id) initWithKey:(NSString *)key loadBlock:(UIImage * (^)())loadBlock;
+- (id)initWithKey:(NSString *)key loadBlock:(UIImage *(^)())loadBlock;
 
--(void) incrementUsage;
--(void)decrementUsageAndCancelOnZero;
+- (void)incrementUsage;
+- (void)decrementUsageAndCancelOnZero;
 
 @end

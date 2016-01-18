@@ -112,7 +112,7 @@ Calling this method will lower the priority of all previously scheduled requests
 /**
 Limits the amount of items that will be stored in the in-memory cache. A value of 0 means ther is not limit. Defaults to 25.
 */
-@property (nonatomic, assign, readwrite) NSInteger memoryCacheSizeLimit;
+@property (nonatomic, assign, readwrite) NSUInteger memoryCacheSizeLimit;
 
 @end
 

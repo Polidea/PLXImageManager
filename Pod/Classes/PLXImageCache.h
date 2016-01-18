@@ -88,6 +88,6 @@ Clears the contents of the file cache. Note: this performs a IO operation, and t
 /**
  Limits the amount of items that will be stored in the in-memory cache. A value of 0 means ther is not limit. Defaults to 25.
  */
-@property (nonatomic, assign, readwrite) NSInteger memoryCacheSizeLimit;
+@property (nonatomic, assign, readwrite) NSUInteger memoryCacheSizeLimit;
 
 @end

@@ -22,6 +22,8 @@ describe(@"PLXImageCache", ^{
             memoryCacheStub = MKTMock([NSCache class]);
             imageCache = [[PLXImageCache alloc] initWithCache:memoryCacheStub
                                                   fileManager:fileManagerStub];
+            
+            [MKTGiven([fileManagerStub fileExistsAtPath:anything()]) willReturnBool:YES];
         });
         
         context(@"when non-nil", ^{
@@ -79,6 +81,8 @@ describe(@"PLXImageCache", ^{
             memoryCacheStub = MKTMock([NSCache class]);
             imageCache = [[PLXImageCache alloc] initWithCache:memoryCacheStub
                                                   fileManager:fileManagerStub];
+            
+            [MKTGiven([fileManagerStub fileExistsAtPath:anything()]) willReturnBool:YES];
         });
         
         it(@"should remove it from the file cache", ^{
