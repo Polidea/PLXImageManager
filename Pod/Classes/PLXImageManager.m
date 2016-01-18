@@ -264,12 +264,20 @@
     }
 }
 
-- (NSUInteger)memoryCacheSizeLimit {
-    return _imageCache.memoryCacheSizeLimit;
+- (NSUInteger)memoryCacheCountLimit {
+    return _imageCache.memoryCacheCountLimit;
 }
 
--(void)setMemoryCacheSizeLimit:(NSUInteger)memoryCacheSizeLimit {
-    _imageCache.memoryCacheSizeLimit = memoryCacheSizeLimit;
+- (void)setMemoryCacheCountLimit:(NSUInteger)memoryCacheCountLimit {
+    _imageCache.memoryCacheCountLimit = memoryCacheCountLimit;
+}
+
+- (NSUInteger)fileCacheTotalSizeLimit {
+    return _imageCache.fileCacheTotalSizeLimit;
+}
+
+- (void)setFileCacheTotalSizeLimit:(NSUInteger)fileCacheTotalSizeLimit {
+    _imageCache.fileCacheTotalSizeLimit = fileCacheTotalSizeLimit;
 }
 
 @end

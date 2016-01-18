@@ -64,15 +64,15 @@ describe(@"PLXImageManager", ^{
         });
         
         it(@"reads should proxy to image cache", ^{
-            __unused NSInteger sizeLimit = imageManager.memoryCacheSizeLimit;
+            __unused NSInteger sizeLimit = imageManager.memoryCacheCountLimit;
             
-            [MKTVerify(cacheMock) memoryCacheSizeLimit];
+            [MKTVerify(cacheMock) memoryCacheCountLimit];
         });
     
         it(@"writes should proxy to image cache", ^{
-            imageManager.memoryCacheSizeLimit = 5;
+            imageManager.memoryCacheCountLimit = 5;
             
-            [MKTVerify(cacheMock) setMemoryCacheSizeLimit:5];
+            [MKTVerify(cacheMock) setMemoryCacheCountLimit:5];
         });
     });
     

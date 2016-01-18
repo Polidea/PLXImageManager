@@ -86,8 +86,15 @@ Clears the contents of the file cache. Note: this performs a IO operation, and t
 -(void) clearFileCache;
 
 /**
- Limits the amount of items that will be stored in the in-memory cache. A value of 0 means ther is not limit. Defaults to 25.
+ Limits the amount of items that will be stored in the in-memory cache. A value of 0 means there is no limit. Defaults to 25.
  */
-@property (nonatomic, assign, readwrite) NSUInteger memoryCacheSizeLimit;
+@property (nonatomic, assign, readwrite) NSUInteger memoryCacheCountLimit;
+
+/**
+ Limits the amount of space (in mega-bytes) that will be used for the file cache. A value of 0 means there is not limit. Defaults to 150MB.
+
+ Note: Once the size limit is reached, the least-recent files will be removed, until a the cache holds around 3/4 the limit of images.
+ */
+@property (nonatomic, assign, readwrite) NSUInteger fileCacheTotalSizeLimit;
 
 @end

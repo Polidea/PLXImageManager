@@ -44,6 +44,7 @@
 @private
     NSCache *_memoryCache;
     NSFileManager *_fileManager;
+    NSUInteger _totalFileCacheSize;
 }
 
 - (id)init {
@@ -58,6 +59,8 @@
     if (self) {
         _fileManager = manager;
         _memoryCache = cache;
+        _totalFileCacheSize = NSUIntegerMax;
+        _fileCacheTotalSizeLimit = 150;
     }
 
     return self;
@@ -73,6 +76,11 @@
         image = [UIImage imageWithContentsOfFile:filePath];
         if (image != nil) {
             [_memoryCache setObject:image forKey:key];
+
+            // little hack: as we can't retrieve the access data of a file, we use the modification date, and update it manually every time we access the file
+            NSDate *date = [NSDate date];
+            NSURL *url = [NSURL fileURLWithPath:filePath];
+            [url setResourceValue:date forKey:NSURLContentModificationDateKey error:NULL];
         }
     }
 
@@ -87,12 +95,21 @@
     if (image == nil) {
         [_memoryCache removeObjectForKey:key];
         if ([_fileManager fileExistsAtPath:filePath]) {
+            if (_totalFileCacheSize != NSUIntegerMax) {
+                _totalFileCacheSize -= [self sizeOfFileAtPath:filePath];
+            }
             [_fileManager removeItemAtPath:filePath error:NULL];
         }
 
     } else {
         [_memoryCache setObject:image forKey:key];
         [_fileManager createFileAtPath:filePath contents:UIImagePNGRepresentation(image) attributes:nil];
+
+        if (_totalFileCacheSize != NSUIntegerMax){
+            _totalFileCacheSize += [self sizeOfFileAtPath:filePath];
+        }
+
+        [self shrinkFileCacheToSizeLimit];
     }
 }
 
@@ -106,14 +123,15 @@
 
 - (void)clearFileCache {
     [_fileManager removeItemAtPath:[[self imageCacheDirectory] path] error:nil];
+    _totalFileCacheSize = NSUIntegerMax;
 }
 
--(NSUInteger)memoryCacheSizeLimit {
+- (NSUInteger)memoryCacheCountLimit {
     return _memoryCache.countLimit;
 }
 
--(void)setMemoryCacheSizeLimit:(NSUInteger)memoryCacheSizeLimit {
-    _memoryCache.countLimit = memoryCacheSizeLimit;
+- (void)setMemoryCacheCountLimit:(NSUInteger)memoryCacheCountLimit {
+    _memoryCache.countLimit = memoryCacheCountLimit;
 }
 
 #pragma mark internal helpers
@@ -153,5 +171,71 @@
     }
     return ret;
 }
+
+- (NSUInteger)sizeOfFileAtPath:(NSString *)path {
+    NSURL *url = [NSURL fileURLWithPath:path];
+
+    NSNumber *size;
+    [url getResourceValue:&size forKey:NSURLFileSizeKey error:nil];
+
+    return [size unsignedIntegerValue];
+}
+
+- (void)shrinkFileCacheToSizeLimit {
+    if (_fileCacheTotalSizeLimit == 0) {
+        //no limit, no need/sense to do anything
+        return;
+    }
+
+    NSUInteger fileCacheSizeLimit = _fileCacheTotalSizeLimit * 1024 * 1024;
+
+    // if we have calculated the cache size already, check if we fit into it
+    if (_totalFileCacheSize != NSUIntegerMax && _totalFileCacheSize < fileCacheSizeLimit) {
+        return;
+    }
+
+    static NSString *const urlKey = @"url";
+    static NSString *const modificationDateKey = @"date";
+    static NSString *const sizeKey = @"size";
+
+    NSArray *urls = [_fileManager contentsOfDirectoryAtURL:[self imageCacheDirectory]
+                                includingPropertiesForKeys:@[NSURLContentModificationDateKey, NSURLFileSizeKey]
+                                                   options:NSDirectoryEnumerationSkipsHiddenFiles
+                                                     error:NULL];
+
+    NSMutableArray *files = [NSMutableArray arrayWithCapacity:urls.count];
+
+    _totalFileCacheSize = 0;
+
+    for (NSURL *url in urls) {
+        NSNumber *size;
+        [url getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
+
+        NSDate *modificationDate;
+        [url getResourceValue:&modificationDate forKey:NSURLContentModificationDateKey error:NULL];
+
+        [files addObject:@{
+                urlKey : url,
+                sizeKey : size,
+                modificationDateKey : modificationDate
+        }];
+
+        _totalFileCacheSize += [size unsignedIntegerValue];
+    }
+
+    [files sortUsingDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:modificationDateKey ascending:NO]]];
+
+    while (_totalFileCacheSize > fileCacheSizeLimit * 3 / 4){
+        NSDictionary * file = [files lastObject];
+        [files removeLastObject];
+
+        NSLog(@"will remove file: %@", file[urlKey]);
+
+        _totalFileCacheSize -= [file[sizeKey] unsignedIntegerValue];
+
+        [_fileManager removeItemAtURL:file[urlKey] error:NULL];
+    }
+}
+
 
 @end

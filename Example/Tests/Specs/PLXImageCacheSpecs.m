@@ -140,13 +140,13 @@ describe(@"PLXImageCache", ^{
         });
         
         it(@"read should proxy to the buildin cache", ^{
-            __unused NSInteger sizeLimit = imageCache.memoryCacheSizeLimit;
+            __unused NSUInteger sizeLimit = imageCache.memoryCacheCountLimit;
             
             [MKTVerify(memoryCacheStub) countLimit];
         });
         
         it(@"write should proxy to the buildin cache", ^{
-            imageCache.memoryCacheSizeLimit = 10;
+            imageCache.memoryCacheCountLimit = 10;
             
             [MKTVerify(memoryCacheStub) setCountLimit:10];
         });
