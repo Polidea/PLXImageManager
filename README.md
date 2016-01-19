@@ -15,7 +15,7 @@ PLXURLImageProvider * provider = [PLXURLImageProvider new];
 PLXImageManager * manager = [[PLXImageManager alloc] initWithProvider:provider];
 ```
 
-The *provider* is responsible for retrieving a image if it is not available in cache. The standard PLXURLImageProvider is provided as convienience. It takes a URL and simply downloads up to 5 images at once. By implementing the *PLXImageManagerProvider* protocole yourself, you can adapt the manager to fit your needs.
+The *provider* is responsible for retrieving a image if it is not available in cache. The standard PLXURLImageProvider is provided as convenience. It takes a URL and simply downloads up to 5 images at once. By implementing the *PLXImageManagerProvider* protocol yourself, you can adapt the manager to fit your needs.
 	
 ### Requesting images
 ```objective-c
@@ -25,13 +25,47 @@ The *provider* is responsible for retrieving a image if it is not available in c
 	//consume the image here
 }];
 ```
+### Canceling requests
+The -imageForIdentifier:placeholder:callback: method returns a PLXImageManagerRequestToken that can be used to cancel requests for images. 
+
+
+This is important in scenarios like scrolling a UITableView, when cells can disappear before the download finishes. Canceling those will spare network usage, and reduce the time for the right image to appear.
+
+
+```objective-c
+PLXImageManagerRequestToken * token = nil;
+
+//get token
+token = [manager imageForIdentifier:@”http://placehold.it/350/00aa00/ffffff”
+                        placeholder:[UIImage imageNamed:@”placeholder”
+                           callback:^(UIImage *image, BOOL isPlaceholder) {
+	//consume the image here
+}];
+
+//cancel the download
+[token cancel];
+```
+
+A convenience method is provided to store (and retrieve) a token on any NSObject subclass.
+
+
+```objective-c
+//storing a token
+[aObject plx_storeToken:token];
+
+//retrieving a token
+token = [aObject plx_retrieveToken];
+``` 
+
+### Caching
+PLXImageManager makes use of a combination of memory and file based caches. Refer to the documentation for the memoryCacheCountLimit and fileCacheTotalSizeLimit properties for details.
 
 ### Example
 
 The included example project demonstrates:
 
-* one of the ways to integrate PLXImageManager into your application, by subclassing it
-* canceling of image requests in a UITableView
+* instantiating PLXImageManager
+* requesting images using the convenience category on UIImageView
 
 To run it, clone the repo, and run `pod install` from the Example directory first. 
 

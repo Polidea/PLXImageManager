@@ -9,11 +9,13 @@
 @import UIKit;
 
 @class PLXTileManager;
+@class PLXImageManager;
 
 @interface PLXAppDelegate : UIResponder <UIApplicationDelegate>
 
 @property(strong, nonatomic) UIWindow *window;
 @property(strong, readonly) PLXTileManager *tileManager;
+@property(strong, readonly) PLXImageManager * imageManager;
 
 + (PLXAppDelegate *)appDelegate;
 

@@ -1,11 +1,11 @@
 #import "PLXTileListViewController.h"
 #import "PLXAppDelegate.h"
 #import "PLXTileManager.h"
-#import <PLXImageManager/NSObject+PLXImageManagerTokenStorage.h>
+#import <PLXImageManager/UIImageView+PLXImageManager.h>
 
 
 @implementation PLXTileListViewController {
-
+    
 }
 
 NSInteger const tileYMin = 326;
@@ -16,9 +16,9 @@ NSInteger const tileXMax = 580;
 - (id)init {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-
+        
     }
-
+    
     return self;
 }
 
@@ -45,35 +45,34 @@ NSInteger const tileXMax = 580;
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     static NSString *cellId = @"TileCell";
-
+    
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellId];
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellId];
     }
-
+    
     NSUInteger const hash = [indexPath hash];
     cell.tag = hash;
-
+    
     NSInteger ix = indexPath.row % (tileYMax - tileYMin) + tileXMin;
-    NSInteger iy =indexPath.row / (tileYMax - tileYMin) + tileYMin;
+    NSInteger iy = indexPath.row / (tileYMax - tileYMin) + tileYMin;
     
     cell.textLabel.text = [NSString stringWithFormat:@"y: %ld x: %ld", (long)iy, (long)ix];
-
+    
     cell.imageView.backgroundColor = [UIColor blackColor];
-    cell.imageView.image = nil;
-
-    [[cell plx_retrieveToken] cancel];
-
-    PLXImageManagerRequestToken *token = [[PLXAppDelegate appDelegate].tileManager tileForZoomLevel:10 tileX:tileXMin + indexPath.row
-                                                                                            tileY:tileYMin + indexPath.section
-                                                                                         callback:^(UIImage *image, NSUInteger zoom, NSInteger tileX, NSInteger tileY) {
-                                                                                             if (cell.tag == hash) {
-                                                                                                 cell.imageView.image = image;
-                                                                                                 [cell setNeedsLayout];
-                                                                                             }
-                                                                                         }];
-    [cell plx_storeToken:token];
-
+    
+    PLXTileManager * tileManager = [PLXAppDelegate appDelegate].tileManager;
+    PLXImageManager * imageManager = [PLXAppDelegate appDelegate].imageManager;
+    
+    [cell.imageView plx_setImageUsingManager:imageManager
+                              withIdentifier:[tileManager URLStringForTileAtZoomLevel:10
+                                                                                tileX:ix
+                                                                                tileY:iy]
+                            placeholderImage:nil
+                                    callback:^(UIImage * image, BOOL isPlaceholder) {
+                                        [cell setNeedsLayout];
+                                    }];
+    
     return cell;
 }
 
